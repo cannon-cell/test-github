@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Server http</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Outfit', sans-serif; }
+        iframe { border: none; width: 100%; height: 100%; display: none; }
+        .offline-bg { background: radial-gradient(circle at center, #1e1b4b 0%, #030712 100%); }
+    </style>
+</head>
+<body>
+    <div id="loader" class="flex flex-col items-center justify-center min-h-screen text-slate-100 offline-bg p-6">
+        <div class="max-w-md w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-3xl p-8 text-center shadow-2xl">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-6 animate-spin">
+                <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.253 8H18"></path>
+                </svg>
+            </div>
+            <h1 class="text-xl font-bold text-white mb-2">Łączenie z serwerem...</h1>
+            <p class="text-slate-400 text-sm">Sprawdzanie stanu połączenia tunelu mobilnego.</p>
+        </div>
+    </div>
+
+    <div id="offline-screen" class="hidden flex items-center justify-center min-h-screen text-slate-100 offline-bg p-6">
+        <div class="max-w-md w-full bg-slate-900/80 backdrop-blur-md border border-indigo-500/20 rounded-3xl p-8 text-center shadow-2xl">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 mb-6 animate-pulse">
+                <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-extrabold text-white mb-3">Serwer Offline</h1>
+            <p class="text-slate-400 text-sm leading-relaxed mb-8">
+                Połączenie z Twoim telefonem nie mogło zostać nawiązane. Upewnij się, że serwer oraz udostępnianie globalne są włączone w aplikacji mobilnej.
+            </p>
+            <button onclick="checkConnection()" class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-2xl transition duration-300 active:scale-[0.98]">
+                Spróbuj ponownie
+            </button>
+        </div>
+    </div>
+
+    <iframe id="server-frame" src=""></iframe>
+
+    <script>
+        const tunnelUrl = "https://ms-f80f143f.serveo.net";
+        
+        async function checkConnection() {
+            document.getElementById('loader').classList.remove('hidden');
+            document.getElementById('offline-screen').classList.add('hidden');
+            document.getElementById('server-frame').style.display = 'none';
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            
+            try {
+                await fetch(tunnelUrl + '/state_hash', { 
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                document.getElementById('loader').classList.add('hidden');
+                const iframe = document.getElementById('server-frame');
+                iframe.src = tunnelUrl;
+                iframe.style.display = 'block';
+            } catch (error) {
+                clearTimeout(timeoutId);
+                console.error("Connection failed:", error);
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('offline-screen').classList.remove('hidden');
+            }
+        }
+        
+        window.onload = checkConnection;
+    </script>
+</body>
+</html>
